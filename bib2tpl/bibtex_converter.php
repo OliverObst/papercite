@@ -570,13 +570,14 @@ class BibtexConverter
     if ($name != 'bibtex')
       // replace newlines with spaces, to avoid PHP converting them to <br/>
       $str = preg_replace("/[\r\n]+/", " ", $str);
+    else
+      $str = preg_replace("/([^,}])[\r\n]+/", "$1 ", $str); 
+
+    if ($name != 'wwwnote')  
       $str = htmlspecialchars($str);
+
     return $str;
   }
-
-
-  
-
 
 }
 

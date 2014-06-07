@@ -301,7 +301,10 @@ class Papercite {
    * @param $types An array of couples (folder, extension)
    */
   function checkFiles(&$entry, $options) {
-    $id = strtolower(preg_replace("@[/:]@", "-", $entry["cite"]));
+    if ($use_lower_keys_only)
+      $id = trim(strtolower(preg_replace("@[/:]@", "-", $entry["cite"])));
+    else
+      $id = trim(preg_replace("@[/:]@", "-", $entry["cite"]));
     foreach($options["checked_files"] as &$type) {
       // 0. field, 1. folder, 2. suffix, 3. extension, 4. mime-type
       if (sizeof($type) == 3) {
@@ -914,19 +917,44 @@ class Papercite {
         
         $selected_author = false;
         $selected_type = false;
+	$selected_preselection = false;
         
         $original_authors = Papercite::array_get($options, "author", "");
         $original_allow = Papercite::array_get($options, "allow", "");
+	$author_all = Papercite::array_get($options, "author_all", "");
+	$allow_all = Papercite::array_get($options, "allow_all", "");
+        $original_preselection = Papercite::array_get($options, "preselection", "");    
+
+        if (!$selected_type && !empty($allow_all)) 
+           $selected_type = ($options["allow"] = "");
+        if (!$selected_author && !empty($author_all))
+           $selected_author = ($options["author"] = "");
+
+        if (!empty($original_preselection)) {
+           $files = array_combine(explode(',', $original_preselection), explode(',', $options["file"]));
+           if (!$files) {
+             print "<br /><strong>file</strong> parameter and <strong>preselection</strong> parameter should have the same number of elements. <br />";  
+             $original_preselection = "";
+           } else {
+             reset($files);
+             $selected_preselection = key($files);
+           }  
+        }       
         
         if (isset($_POST) && (papercite::array_get($_POST, "papercite_post_id", 0) == $post->ID)) {
-        if (isset($_POST["papercite_author"]) && !empty($_POST["papercite_author"])) 
-                $selected_author = ($options["author"] = $_POST["papercite_author"]);        
+           if (isset($_POST["papercite_author"]) && (!empty($_POST["papercite_author"]) || !strcmp($author_all, "complete")))
+              $selected_author = ($options["author"] = $_POST["papercite_author"]);        
             
-        if (isset($_POST["papercite_allow"]) && !empty($_POST["papercite_allow"])) 
-                $selected_type = ($options["allow"] = $_POST["papercite_allow"]);
-        
+           if (isset($_POST["papercite_allow"]) && (!empty($_POST["papercite_allow"]) || !strcmp($allow_all, "complete")))
+              $selected_type = ($options["allow"] = $_POST["papercite_allow"]);
+
+           if (isset($_POST["papercite_preselection"]) && !empty($_POST["papercite_preselection"]))
+	      $selected_preselection = $_POST["papercite_preselection"];       
         }
-        
+
+        if ($selected_preselection)
+	  $options["file"] = $files[$selected_preselection];
+
         $result = $this->getEntries($options);
         ob_start();
         ?>
@@ -964,6 +992,25 @@ class Papercite {
                             }
                             ?>
               </select></td>
+                       <?php
+                       if (!empty($original_preselection)) {
+                       ?>
+                               <td>Publications:</td>
+                               <td><select name="papercite_preselection" id="papercite_preselection">
+                       <?php
+                       $selections = preg_split("#\s*,\s*#", $original_preselection);
+                       foreach($selections as $preselection) {
+                           print "<option value=\"".htmlentities($preselection)."\"";
+                           if ($selected_preselection == $preselection)
+                               print " selected=\"selected\"";
+                           print " >" . str_replace("_", " ", $preselection) . "</option>";
+                       }
+                       ?>
+                                    </select>
+                               </td>
+                       <?php
+                       }
+                       ?>
               <td><input type="submit" value="Filter" /></td>
             </tr>
           </table>

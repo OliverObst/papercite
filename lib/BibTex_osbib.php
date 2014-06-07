@@ -223,7 +223,7 @@ class PaperciteBibTexEntries {
 		if(preg_match("/=/", $matches[2])) // this is a field
 			$matches = preg_split("/@(.*)\s*[{(](.*)/U", $entry, 2, PREG_SPLIT_DELIM_CAPTURE);
 		// print_r($matches); print "<P>";
-		$this->data[$this->count]['cite'] = $matches[2];
+		$this->data[$this->count]['cite'] = trim($matches[2]);
 		$this->data[$this->count]['bibtex'] = $entry;
 		$this->reduceFields($matches[3]);
 	}
